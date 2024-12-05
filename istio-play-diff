@@ -1,0 +1,66 @@
+diff --git a/pkg/kube/multicluster/secretcontroller.go b/pkg/kube/multicluster/secretcontroller.go
+index 824ac68268..38b193915c 100644
+--- a/pkg/kube/multicluster/secretcontroller.go
++++ b/pkg/kube/multicluster/secretcontroller.go
+@@ -41,6 +41,7 @@ import (
+ 
+ const (
+ 	MultiClusterSecretLabel = "istio/multiCluster"
++	IgnoreLabel             = "JAJIgnore"
+ )
+ 
+ var (
+@@ -270,6 +271,7 @@ func (c *Controller) addSecret(name types.NamespacedName, s *corev1.Secret) erro
+ 
+ 	var errs *multierror.Error
+ 	for clusterID, kubeConfig := range s.Data {
++		log.Infof("JAJ processing secret")
+ 		logger := log.WithLabels("cluster", clusterID, "secret", secretKey)
+ 		if cluster.ID(clusterID) == c.configClusterID {
+ 			logger.Infof("ignoring cluster as it would overwrite the config cluster")
+@@ -282,11 +284,17 @@ func (c *Controller) addSecret(name types.NamespacedName, s *corev1.Secret) erro
+ 			// clusterID must be unique even across multiple secrets
+ 			kubeConfigSha := sha256.Sum256(kubeConfig)
+ 			if bytes.Equal(kubeConfigSha[:], prev.kubeConfigSha[:]) {
++				if c.CheckLabel(s) {
++					// If the new ignore label was added we want to delete the cluster.
++					log.Infof("JAJ Removing remote cluster due to label: %s", cluster.ID(clusterID))
++					c.deleteCluster(secretKey, prev)
++				}
+ 				logger.Infof("skipping update (kubeconfig are identical)")
+ 				continue
+ 			}
+ 			// stop previous remote cluster
+ 			prev.Stop()
++
+ 		} else if c.cs.Contains(cluster.ID(clusterID)) {
+ 			// if the cluster has been registered before by another secret, ignore the new one.
+ 			logger.Warnf("cluster has already been registered")
+@@ -300,6 +308,7 @@ func (c *Controller) addSecret(name types.NamespacedName, s *corev1.Secret) erro
+ 			errs = multierror.Append(errs, err)
+ 			continue
+ 		}
++		log.Infof("JAJ ID of new remote cluster: %s", remoteCluster.ID)
+ 		// We run cluster async so we do not block, as this requires actually connecting to the cluster and loading configuration.
+ 		c.cs.Store(secretKey, remoteCluster.ID, remoteCluster)
+ 		go func() {
+@@ -308,6 +317,7 @@ func (c *Controller) addSecret(name types.NamespacedName, s *corev1.Secret) erro
+ 	}
+ 
+ 	log.Infof("Number of remote clusters: %d", c.cs.Len())
++	log.Infof("JAJ Number of remote clusters: %d", c.cs.Len())
+ 	return errs.ErrorOrNil()
+ }
+ 
+@@ -391,3 +401,11 @@ func (c *Controller) ListClusters() []cluster.ID {
+ 		return cluster.ID(e)
+ 	})
+ }
++
++func (c *Controller) CheckLabel(secret *corev1.Secret) bool {
++
++	if _, ok := secret.GetLabels()[IgnoreLabel]; ok {
++		return true
++	}
++	return false
++}

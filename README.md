@@ -120,19 +120,22 @@ Hello version: v2, instance: helloworld-v2-54df5f84b-qmg8t..
 
 - Go inside the proxy pod and use curl localhost:15000/help
 
-## Work in progress and next steps
-
 ### - Change the Istio multicluster logic
 
 Play with some code here: [pkg/kube/multicluster/secretcontroller.go](https://github.com/istio/istio/blob/master/pkg/kube/multicluster/secretcontroller.go)
+This small istio diff [diff](./istio-play-diff) uses a label to add and remove remote clusters without removing the secret. Note this is extraneous for testing only as one could just remove the
+multicluster label to achieve the same result.
 
-### - Create some Go tests for the topology
+
+## Work in progress and next steps
+
 
 ## Caveats
 
 - The scripts have not been vetted as runnable from any arbitrary directory
 - There are some unused functions that are still work in progress and will contain bugs if executed. (e.g. trying to set the certSANs via kubadm patch)
 - In general much of this could be ported to any two cluster environment,  but the networking required to ensure the two clusters can talk to each other will be very specific.
+- Currently the services are not exchanged between the clusters, although the remote cluster state is synced.  Some config must have changed perhaps to ignore remote services in some way.
 
 ## References:
 

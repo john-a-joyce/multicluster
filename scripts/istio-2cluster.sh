@@ -61,7 +61,7 @@ do
     	kubectl label namespace default istio-injection-
     	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v1.2.0" | kubectl delete -f -
         kubectl delete clusterroles istio-reader-clusterrole-istio-system istiod-clusterrole-istio-system istiod-gateway-controller-istio-system
-        kubectl delete clusterrolebindings istio-reader-clusterrole-istio-system istiod-clusterrole-istio-system istiod-gateway-controller-istio-system --context=kind-kind-1
+        kubectl delete clusterrolebindings istio-reader-clusterrole-istio-system istiod-clusterrole-istio-system istiod-gateway-controller-istio-system
     	echo ""
     	echo "Deletion done"
     	echo ""
@@ -83,7 +83,7 @@ do
             --from-file="$ISTIO_DIR"/certs/cluster"$KIND_NUM"/cert-chain.pem
         sleep 5
     	helm install istio-base istio/base -n istio-system
-		helm install istiod istio/istiod -n istio-system --set global.meshID=mesh"$KIND_NUM" --set global.multiCluster.clusterName=cluster"$KIND_NUM" --set global.network=network"$KIND_NUM" --set global.multiCLuster.enabled=true
+		helm install istiod istio/istiod -n istio-system --set global.meshID=johnsMesh --set global.multiCluster.clusterName=cluster"$KIND_NUM" --set global.network=network"$KIND_NUM" --set global.multiCLuster.enabled=true
 		helm install istio-eastwestgateway istio/gateway -n istio-system --set name=istio-eastwestgateway --set networkGateway=network"$KIND_NUM"
 		sleep 20
 		kubectl label namespace istio-system topology.istio.io/network=network"$KIND_NUM"
