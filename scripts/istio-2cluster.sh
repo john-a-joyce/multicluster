@@ -56,8 +56,6 @@ do
     	echo ""
 		KUBEOP="delete"
         install_metallb
-    	#"$ISTIO_DIR"/samples/bookinfo/platform/kube/cleanup.sh
-    	#kubectl delete -f "$ISTIO_DIR"/samples/addons
     	istioctl uninstall -y --purge
     	kubectl delete namespace istio-system
     	kubectl label namespace default istio-injection-
@@ -85,19 +83,12 @@ do
             --from-file="$ISTIO_DIR"/certs/cluster"$KIND_NUM"/cert-chain.pem
         sleep 5
     	helm install istio-base istio/base -n istio-system
-		helm install istiod istio/istiod -n istio-system --set global.meshID=mesh"$KIND_NUM" --set global.multiCluster.clusterName=cluster"$KIND_NUM" --set global.network=network"$KIND_NUM"
+		helm install istiod istio/istiod -n istio-system --set global.meshID=mesh"$KIND_NUM" --set global.multiCluster.clusterName=cluster"$KIND_NUM" --set global.network=network"$KIND_NUM" --set global.multiCLuster.enabled=true
 		helm install istio-eastwestgateway istio/gateway -n istio-system --set name=istio-eastwestgateway --set networkGateway=network"$KIND_NUM"
 		sleep 20
 		kubectl label namespace istio-system topology.istio.io/network=network"$KIND_NUM"
 		kubectl label namespace default istio-injection=enabled
-    	kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || { kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v1.2.0" | kubectl apply -f -; }
-    	#kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.24/samples/bookinfo/platform/kube/bookinfo.yaml
-    	#kubectl rollout status deployment productpage-v1 -n default --timeout=120s
 		kubectl apply -n istio-system -f "$ISTIO_DIR/"samples/multicluster/expose-services.yaml
-    	#kubectl apply -f $ISTIO_DIR/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
-    	#kubectl annotate gateway bookinfo-gateway networking.istio.io/service-type=ClusterIP --namespace=default
-    	# sleep or TODO fix wait
-    	#kubectl wait --for=jsonpath='{.status.conditions.reason}'=Programmed gateway/bookinfo-gateway --timeout=90s
     	echo ""
     fi
 	(( KIND_NUM++ ))
